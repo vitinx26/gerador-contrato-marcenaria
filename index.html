@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de Contrato de Marcenaria</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  :root { --bg:#eef0f3; --panel:#fff; --line:#d5d9e0; --text:#1c2430; --muted:#667085; --accent:#1f5f8b; --warn:#fff3bf; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Segoe UI", system-ui, Arial, sans-serif; color:var(--text); background:var(--bg); }
+  .app { display:grid; grid-template-columns: 470px 1fr; min-height:100vh; }
+  .form { background:var(--panel); border-right:1px solid var(--line); padding:20px; overflow-y:auto; height:100vh; position:sticky; top:0; }
+  .form h1 { font-size:18px; margin:0 0 4px; }
+  .form p.sub { margin:0 0 16px; color:var(--muted); font-size:13px; }
+  fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 14px; padding:12px; }
+  legend { font-weight:600; font-size:13px; padding:0 6px; color:var(--accent); }
+  details.box { border:1px solid var(--line); border-radius:8px; margin:0 0 14px; padding:10px 12px; }
+  details.box summary { font-weight:600; font-size:13px; color:var(--accent); cursor:pointer; }
+  details.box summary span { font-weight:400; color:var(--muted); }
+  label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+  input, textarea { width:100%; padding:8px 9px; border:1px solid var(--line); border-radius:6px; font:inherit; font-size:14px; color:var(--text); background:#fff; }
+  input:focus, textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  textarea { resize:vertical; min-height:70px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .line { display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+  .line input { flex:1; min-width:0; }
+  .line input[type=date] { flex:0 0 128px; padding-left:6px; padding-right:4px; }
+  .line select { flex:0 0 112px; padding:8px 4px; border:1px solid var(--line); border-radius:6px; font:inherit; font-size:13px; background:#fff; color:var(--text); }
+  label.chk { display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text); font-size:13px; }
+  label.chk input { width:auto; }
+  input:disabled, select:disabled, input[readonly] { background:#f3f5f8; color:var(--muted); }
+  button { font:inherit; cursor:pointer; border-radius:6px; border:1px solid var(--line); background:#fff; padding:7px 10px; font-size:13px; color:var(--text); }
+  button:hover { background:#f3f5f8; }
+  button.x { flex:0 0 32px; padding:7px 0; color:#b42318; }
+  button.add { margin-top:2px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; padding:11px 14px; font-size:15px; width:100%; }
+  button.primary:hover { background:#184c70; }
+  .total { margin-top:10px; padding:9px 10px; background:#f3f5f8; border-radius:6px; font-size:14px; display:flex; justify-content:space-between; }
+  .total b { font-size:15px; }
+  .actions { display:flex; flex-direction:column; gap:8px; }
+  .hint { font-size:12px; color:var(--muted); margin:6px 0 0; }
+  .status { margin:10px 0 0; padding:9px 11px; border-radius:6px; font-size:14px; background:#e6f0f7; color:#143f5c; border:1px solid #b9d3e6; }
+  .status.erro { background:#fdecea; color:#8a1c12; border-color:#f3b8b1; }
+  .form { padding-left:max(20px, env(safe-area-inset-left, 0px)); padding-right:max(20px, env(safe-area-inset-right, 0px)); }
+  .preview { padding:24px; padding-left:max(24px, env(safe-area-inset-left, 0px)); padding-right:max(24px, env(safe-area-inset-right, 0px)); overflow-x:auto; }
+  .sheet { background:#fff; width:210mm; min-height:297mm; margin:0 auto; padding:25mm 25mm; box-shadow:0 2px 12px rgba(0,0,0,.15);
+           font-family:"Times New Roman", Times, serif; font-size:12pt; line-height:1.5; color:#000; }
+  .sheet h2 { text-align:center; font-size:14pt; margin:0 0 24pt; }
+  .sheet h3 { text-align:center; font-size:12pt; margin:22pt 0 10pt; }
+  .sheet p { margin:0 0 8pt; text-align:justify; }
+  .sheet ul { margin:0 0 8pt; padding-left:28pt; }
+  .sheet .pay p { margin:0 0 2pt; text-align:left; }
+  .sheet .date { margin-top:28pt; text-align:center; }
+  .sheet .sign { margin-top:60pt; text-align:center; break-inside:avoid; }
+  .sheet .sign .rule { border-top:1px solid #000; width:75%; margin:0 auto 4pt; }
+  .sheet .keep { break-inside:avoid; }
+  .empty { background:var(--warn); padding:0 4px; }
+  @media (max-width: 1100px) { .app { grid-template-columns:1fr; } .form { height:auto; position:static; border-right:0; } .preview { padding-block:16px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); } }
+  @media (max-width: 700px) {
+    .form { padding-block:14px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+    input, textarea, .line select { font-size:16px; } /* evita o zoom automático do iPhone */
+    .line.pg { flex-wrap:wrap; }
+    .line.pg > input:not([type=date]) { flex:1 1 100%; }
+    .line.pg > input[type=date], .line.pg > select { flex:1 1 0; min-width:0; }
+    .sheet { width:auto; min-height:0; padding:28px 18px; font-size:11pt; }
+  }
+  @page { size:A4; margin:25mm; }
+  @media print {
+    body { background:#fff; }
+    .form { display:none; }
+    .app { display:block; }
+    .preview { padding:0; overflow:visible; }
+    .sheet { width:auto; min-height:0; margin:0; padding:0; box-shadow:none; }
+    .empty { background:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="form">
+    <h1>Gerador de Contrato</h1>
+    <p class="sub">Preencha os campos; o contrato ao lado atualiza na hora.</p>
+
+    <details class="box" id="contratadoBox">
+      <summary>Contratado (prestador) <span id="contratadoResumo"></span></summary>
+      <p class="hint">Já vem preenchido. Se alterar, a mudança fica salva só neste aparelho e não é apagada ao limpar o contrato.</p>
+      <label for="cNome">Nome completo</label>
+      <input id="cNome" placeholder="Nome do prestador" autocomplete="off">
+      <div class="row">
+        <div><label for="cCpf">CPF</label><input id="cCpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off"></div>
+        <div><label for="cRg">RG</label><input id="cRg" placeholder="00.000.000-0" autocomplete="off"></div>
+      </div>
+      <label for="cEndereco">Endereço</label>
+      <textarea id="cEndereco" placeholder="Rua, número, bairro, Cidade – UF"></textarea>
+    </details>
+
+    <fieldset>
+      <legend>Cliente (contratante)</legend>
+      <label for="nome">Nome completo</label>
+      <input id="nome" placeholder="Nome do cliente">
+      <label for="cpf">CPF</label>
+      <input id="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14">
+      <label for="endereco">Endereço</label>
+      <textarea id="endereco" placeholder="Rua, número, complemento - Cidade/UF"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Objeto do contrato</legend>
+      <label>Itens (produção e instalação de)</label>
+      <div id="itens"></div>
+      <button type="button" class="add" id="addItem">+ Adicionar item</button>
+      <label for="specs">Especificações</label>
+      <textarea id="specs" rows="4"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Pagamento</legend>
+      <label class="chk"><input type="checkbox" id="sinalOn"> Sinal (valor, data e forma)</label>
+      <div class="line pg"><input id="sinalValor" class="money" placeholder="R$ 0,00" inputmode="decimal"><input id="sinalData" type="date">
+        <select id="sinalForma"><option value="dinheiro">Dinheiro/Pix</option><option value="cartao">Cartão</option></select></div>
+      <label class="chk"><input type="checkbox" id="entradaOn"> Entrada (valor, data e forma)</label>
+      <div class="line pg"><input id="entradaValor" class="money" placeholder="R$ 0,00" inputmode="decimal"><input id="entradaData" type="date">
+        <select id="entradaForma"><option value="dinheiro">Dinheiro/Pix</option><option value="cartao">Cartão</option></select></div>
+      <label>Parcelas futuras (valor, data e forma)</label>
+      <div id="parcelas"></div>
+      <button type="button" class="add" id="addParcela">+ Adicionar parcela</button>
+      <label for="totalValor">Valor total <span id="totalModo"></span></label>
+      <div class="line pg"><input id="totalValor" class="money" placeholder="R$ 0,00" inputmode="decimal"><input id="totalData" type="date">
+        <select id="totalForma"><option value="dinheiro">Dinheiro/Pix</option><option value="cartao">Cartão</option></select></div>
+      <p class="hint">Com sinal ou entrada marcados, o total é a soma automática. Desmarque os dois (pagamento à vista, por exemplo) para digitar o total.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Prazo e emissão</legend>
+      <div class="row">
+        <div><label for="prazo">Prazo (dias corridos)</label><input id="prazo" type="number" min="1" value="60"></div>
+        <div><label for="emissao">Data de emissão</label><input id="emissao" type="date"></div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="primary" id="pdf">Baixar PDF</button>
+      <button type="button" id="limpar">Limpar para novo contrato</button>
+    </div>
+    <p class="status" id="status" role="status" hidden></p>
+    <p class="hint">O PDF sai com o nome do cliente. No celular, confirme o download quando o aviso aparecer.</p>
+  </div>
+
+  <div class="preview"><div class="sheet" id="sheet"></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function () {
+  var KEY = 'contrato-marcenaria-v1';
+  var MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  var $ = function (id) { return document.getElementById(id); };
+
+  function hoje() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function padrao() {
+    return {
+      nome: '', cpf: '', endereco: '',
+      itens: [''],
+      specs: 'Material a ser utilizado: MDF de 15mm branco tx, MDF de 6mm branco tx, dobradiças com slow e click, puxadores em alumínio, corrediças telescópicas',
+      sinalOn: true, sinalValor: '', sinalData: '', sinalForma: 'dinheiro',
+      entradaOn: true, entradaValor: '', entradaData: '', entradaForma: 'dinheiro',
+      parcelas: [{ valor: '', data: '', forma: 'dinheiro' }],
+      totalValor: '', totalData: '', totalForma: 'dinheiro',
+      prazo: '60', emissao: hoje()
+    };
+  }
+  var st = padrao();
+  try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === 'object') st = Object.assign(padrao(), s); } catch (e) {}
+  // dados do contratado: já vêm preenchidos; se forem alterados, a alteração fica salva neste aparelho
+  var KEY_CT = 'contrato-marcenaria-contratado', ct = { nome: 'ANDERSON RAIMUNDO DE OLIVEIRA JUNIOR', cpf: '404.698.448-17', rg: '49.396.058-2', endereco: 'Rua Cristóvão Arraes, 389, Vila Santa Terezinha, São Paulo – SP' };
+  try { var c0 = JSON.parse(localStorage.getItem(KEY_CT)); if (c0 && typeof c0 === 'object') ct = Object.assign(ct, c0); } catch (e) {}
+  if (!Array.isArray(st.itens) || !st.itens.length) st.itens = [''];
+  if (!Array.isArray(st.parcelas)) st.parcelas = [];
+
+  // ---------- helpers ----------
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function campo(v, rotulo) { v = String(v || '').trim(); return v ? esc(v) : '<span class="empty">[' + rotulo + ']</span>'; }
+  function parseMoney(s) {
+    s = String(s || '').replace(/[^\d.,]/g, '');
+    if (!s) return 0;
+    if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    var n = parseFloat(s);
+    return isFinite(n) ? Math.round(n * 100) / 100 : 0;
+  }
+  function fmtMoney(n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtData(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1].slice(2) : ''; }
+  function fmtCpf(v) {
+    var d = String(v).replace(/\D/g, '').slice(0, 11);
+    return d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+  }
+
+  // ---------- valor por extenso ----------
+  var U = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  var D = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  var C = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  function ate999(n) {
+    if (n === 100) return 'cem';
+    var p = [], c = Math.floor(n / 100), r = n % 100;
+    if (c) p.push(C[c]);
+    if (r) { if (r < 20) p.push(U[r]); else { var d = Math.floor(r / 10), u = r % 10; p.push(D[d] + (u ? ' e ' + U[u] : '')); } }
+    return p.join(' e ');
+  }
+  function inteiroExtenso(n) {
+    if (n === 0) return 'zero';
+    var mi = Math.floor(n / 1e6), mil = Math.floor(n / 1000) % 1000, r = n % 1000, g = [];
+    if (mi) g.push({ t: ate999(mi) + (mi === 1 ? ' milhão' : ' milhões'), v: mi });
+    if (mil) g.push({ t: ate999(mil) + ' mil', v: mil });
+    if (r) g.push({ t: ate999(r), v: r });
+    var out = g[0].t;
+    for (var i = 1; i < g.length; i++) {
+      var ult = i === g.length - 1, v = g[i].v;
+      out += (ult && (v < 100 || v % 100 === 0) ? ' e ' : ', ') + g[i].t;
+    }
+    return out;
+  }
+  function extenso(valor) {
+    var cent = Math.round(valor * 100), re = Math.floor(cent / 100), ce = cent % 100, p = [];
+    if (re) p.push(inteiroExtenso(re) + (re % 1e6 === 0 ? ' de' : '') + (re === 1 ? ' real' : ' reais'));
+    if (ce) p.push(inteiroExtenso(ce) + (ce === 1 ? ' centavo' : ' centavos'));
+    return p.join(' e ');
+  }
+
+  // ---------- contrato ----------
+  function render() {
+    var nome = st.nome.trim().toUpperCase(), cNome = ct.nome.trim().toUpperCase();
+    $('contratadoResumo').textContent = cNome ? '· ' + cNome : '· preencher';
+    var sinal = st.sinalOn ? parseMoney(st.sinalValor) : 0, entrada = st.entradaOn ? parseMoney(st.entradaValor) : 0;
+    var parcelas = st.parcelas.filter(function (p) { return parseMoney(p.valor) > 0; });
+    var manual = !st.sinalOn && !st.entradaOn;
+    var total = manual ? parseMoney(st.totalValor) : sinal + entrada + parcelas.reduce(function (a, p) { return a + parseMoney(p.valor); }, 0);
+    ['Valor', 'Data', 'Forma'].forEach(function (k) { $('sinal' + k).disabled = !st.sinalOn; $('entrada' + k).disabled = !st.entradaOn; });
+    $('totalValor').readOnly = !manual;
+    $('totalData').style.display = $('totalForma').style.display = manual ? '' : 'none';
+    $('totalModo').textContent = manual ? '(digite o valor, data e forma)' : '(soma automática)';
+    if (!manual) $('totalValor').value = fmtMoney(total);
+    var forma = function (f) { return f === 'cartao' ? ', no cartão.' : ', em dinheiro/Pix.'; };
+
+    var itens = st.itens.map(function (i) { return i.trim(); }).filter(Boolean);
+    var itensHtml = itens.length ? '<ul>' + itens.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>'
+                                 : '<p><span class="empty">[itens do serviço]</span></p>';
+    var dia = function (iso) { return ' dia ' + (fmtData(iso) || '<span class="empty">[data]</span>'); };
+
+    var pay = '';
+    if (sinal) pay += '<p>SINAL de ' + fmtMoney(sinal) + ' (' + extenso(sinal) + '),' + dia(st.sinalData) + forma(st.sinalForma) + '</p>';
+    if (entrada) pay += '<p>VALOR DE ENTRADA ' + fmtMoney(entrada) + dia(st.entradaData) + forma(st.entradaForma) + '</p>';
+    if (parcelas.length) pay += '<p>PARCELAS:</p>' + parcelas.map(function (p) { return '<p>' + fmtMoney(parseMoney(p.valor)) + dia(p.data) + forma(p.forma) + '</p>'; }).join('');
+    pay += '<p>VALOR TOTAL: ' + (total ? fmtMoney(total) + ' (' + extenso(total) + ')' + (manual ? (st.totalData ? ',' + dia(st.totalData) : '') + forma(st.totalForma) : '.') : '<span class="empty">[valor total]</span>') + '</p>';
+
+    var em = /^(\d{4})-(\d{2})-(\d{2})$/.exec(st.emissao || '');
+    var dataEmissao = em ? em[3] + ' de ' + MESES[+em[2] - 1] + ' de ' + em[1] : '<span class="empty">[data de emissão]</span>';
+
+    $('sheet').innerHTML =
+      '<h2>CONTRATO DE PRESTAÇÃO DE SERVIÇO</h2>' +
+      '<h3>IDENTIFICAÇÃO DAS PARTES CONTRATANTES</h3>' +
+      '<p><b>CONTRATANTE:</b> ' + campo(nome, 'nome do cliente') + ', CPF: ' + campo(st.cpf, 'CPF') + ', residente e domiciliado na ' + campo(st.endereco.replace(/\s+/g, ' ').replace(/\.$/, ''), 'endereço') + '.</p>' +
+      '<p><b>CONTRATADO:</b> ' + campo(cNome, 'nome do contratado') + ', CPF: ' + campo(ct.cpf, 'CPF do contratado') + ', RG: ' + campo(ct.rg, 'RG do contratado') + ', residente e domiciliado na ' + campo(ct.endereco.replace(/\s+/g, ' ').replace(/\.$/, ''), 'endereço do contratado') + '.</p>' +
+      '<p>As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Prestação de Serviços, que se regerá pelas cláusulas seguintes e pelas condições de preço, forma e termo de pagamento descritas no presente.</p>' +
+      '<h3>DO OBJETO DO CONTRATO</h3>' +
+      '<p>É objeto do presente contrato a prestação do serviço de produção e instalação de:</p>' + itensHtml +
+      '<p>Seguintes especificações:</p>' +
+      '<p>' + campo(st.specs, 'especificações').replace(/\n/g, '<br>') + '</p>' +
+      '<h3>OBRIGAÇÕES DO CONTRATANTE</h3>' +
+      '<p>O CONTRATANTE deverá fornecer ao CONTRATADO todas as informações necessárias à realização do serviço, devendo especificar os detalhes necessários à perfeita consecução do mesmo, e a forma de como ele deve ser entregue.</p>' +
+      '<p>O CONTRATANTE deverá efetuar o pagamento na forma e condições estabelecidas.</p>' +
+      '<div class="pay">' + pay + '</div>' +
+      '<h3>OBRIGAÇÕES DO CONTRATADO</h3>' +
+      '<p>É dever do CONTRATADO oferecer ao contratante a cópia do presente instrumento, contendo todas as especificidades da prestação de serviço contratado.</p>' +
+      '<h3>DA RESCISÃO IMOTIVADA</h3>' +
+      '<p>Caso o Contratante queira rescindir o presente instrumento, sem que haja qualquer tipo de motivo relevante, não obstante, a outra parte deverá ser restituída das despesas que possa ter ocorrido pela compra de materiais, dentre outras necessárias para execução do projeto, acrescida de multa de 10% do valor total do serviço.</p>' +
+      '<h3>DO PRAZO</h3>' +
+      '<p>O CONTRATADO assume o compromisso de realizar o serviço dentro do prazo de em média ' + campo(st.prazo, 'prazo') + ' dias corridos à partir do pagamento do serviço de acordo com a forma estabelecida no presente contrato, podendo o mesmo ser alterado desde que acordado previamente entre as partes.</p>' +
+      '<div class="keep">' +
+      '<p>Por estarem assim justos e contratados, firmam o presente instrumento, em duas vias de igual teor.</p>' +
+      '<p class="date">São Paulo, ' + dataEmissao + '.</p>' +
+      '<div class="sign"><div class="rule"></div>' + campo(nome, 'nome do cliente') + '</div>' +
+      '<div class="sign"><div class="rule"></div>' + campo(cNome, 'nome do contratado') + '</div>' +
+      '</div>';
+
+    try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {}
+  }
+
+  // ---------- formulário ----------
+  var simples = ['nome', 'cpf', 'endereco', 'specs', 'sinalValor', 'sinalData', 'sinalForma', 'entradaValor', 'entradaData', 'entradaForma', 'totalValor', 'totalData', 'totalForma', 'prazo', 'emissao'];
+  function preencher() {
+    simples.forEach(function (id) { $(id).value = st[id] || ''; });
+    $('sinalOn').checked = !!st.sinalOn; $('entradaOn').checked = !!st.entradaOn;
+    desenharItens(); desenharParcelas();
+  }
+  function moneyBlur(el, set) {
+    el.addEventListener('blur', function () { var n = parseMoney(el.value); el.value = n ? fmtMoney(n) : ''; set(el.value); render(); });
+  }
+  function desenharItens() {
+    var box = $('itens'); box.innerHTML = '';
+    st.itens.forEach(function (v, i) {
+      var l = document.createElement('div'); l.className = 'line';
+      var inp = document.createElement('input'); inp.value = v; inp.placeholder = 'Ex.: Guarda-roupa em L';
+      inp.addEventListener('input', function () { st.itens[i] = inp.value; render(); });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); st.itens.splice(i + 1, 0, ''); desenharItens(); box.children[i + 1].firstChild.focus(); } });
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'x'; b.textContent = '✕'; b.title = 'Remover item';
+      b.addEventListener('click', function () { st.itens.splice(i, 1); if (!st.itens.length) st.itens = ['']; desenharItens(); render(); });
+      l.appendChild(inp); l.appendChild(b); box.appendChild(l);
+    });
+  }
+  function desenharParcelas() {
+    var box = $('parcelas'); box.innerHTML = '';
+    st.parcelas.forEach(function (p, i) {
+      var l = document.createElement('div'); l.className = 'line pg';
+      var v = document.createElement('input'); v.value = p.valor; v.placeholder = 'R$ 0,00'; v.inputMode = 'decimal';
+      v.addEventListener('input', function () { p.valor = v.value; render(); });
+      moneyBlur(v, function (x) { p.valor = x; });
+      var d = document.createElement('input'); d.type = 'date'; d.value = p.data;
+      d.addEventListener('input', function () { p.data = d.value; render(); });
+      var f = document.createElement('select');
+      f.innerHTML = '<option value="dinheiro">Dinheiro/Pix</option><option value="cartao">Cartão</option>';
+      f.value = p.forma === 'cartao' ? 'cartao' : 'dinheiro';
+      f.addEventListener('input', function () { p.forma = f.value; render(); });
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'x'; b.textContent = '✕'; b.title = 'Remover parcela';
+      b.addEventListener('click', function () { st.parcelas.splice(i, 1); desenharParcelas(); render(); });
+      l.appendChild(v); l.appendChild(d); l.appendChild(f); l.appendChild(b); box.appendChild(l);
+    });
+  }
+
+  simples.forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      if (id === 'cpf') $(id).value = fmtCpf($(id).value);
+      st[id] = $(id).value; render();
+    });
+  });
+  [['cNome', 'nome'], ['cCpf', 'cpf'], ['cRg', 'rg'], ['cEndereco', 'endereco']].forEach(function (par) {
+    var el = $(par[0]); el.value = ct[par[1]] || '';
+    el.addEventListener('input', function () {
+      if (par[1] === 'cpf') el.value = fmtCpf(el.value);
+      ct[par[1]] = el.value;
+      try { localStorage.setItem(KEY_CT, JSON.stringify(ct)); } catch (e) {}
+      render();
+    });
+  });
+  $('contratadoBox').open = !(ct.nome && ct.cpf && ct.rg && ct.endereco);
+  moneyBlur($('sinalValor'), function (x) { st.sinalValor = x; });
+  moneyBlur($('entradaValor'), function (x) { st.entradaValor = x; });
+  moneyBlur($('totalValor'), function (x) { if (!$('totalValor').readOnly) st.totalValor = x; });
+  ['sinalOn', 'entradaOn'].forEach(function (id) {
+    $(id).addEventListener('change', function () {
+      st[id] = $(id).checked;
+      if (!st.sinalOn && !st.entradaOn) $('totalValor').value = st.totalValor || '';
+      render();
+    });
+  });
+
+  $('addItem').addEventListener('click', function () { st.itens.push(''); desenharItens(); $('itens').lastChild.firstChild.focus(); });
+  $('addParcela').addEventListener('click', function () {
+    var ult = st.parcelas[st.parcelas.length - 1], nova = { valor: '', data: '', forma: ult ? ult.forma : 'dinheiro' };
+    var m = ult && /^(\d{4})-(\d{2})-(\d{2})$/.exec(ult.data);
+    if (m) { // sugere o mesmo dia do mês seguinte
+      var y = +m[1], mo = +m[2] + 1; if (mo > 12) { mo = 1; y++; }
+      var dd = Math.min(+m[3], new Date(y, mo, 0).getDate());
+      nova.data = y + '-' + String(mo).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+      nova.valor = ult.valor;
+    }
+    st.parcelas.push(nova); desenharParcelas(); render(); $('parcelas').lastChild.firstChild.focus();
+  });
+  $('limpar').addEventListener('click', function () {
+    if (!confirmar('limpar', 'Toque de novo em "Limpar" para apagar os dados preenchidos.')) return;
+    st = padrao(); preencher(); render(); aviso('Dados apagados. Pronto para um novo contrato.');
+  });
+  $('pdf').addEventListener('click', function () {
+    var faltam = document.querySelectorAll('#sheet .empty').length;
+    if (faltam && !confirmar('pdf', 'Há ' + faltam + ' campo(s) em branco no contrato (em amarelo). Toque de novo em "Baixar PDF" para gerar assim mesmo.')) return;
+    var nomeArq = 'CONTRATO MARCENARIA - ' + (st.nome.trim().toUpperCase() || 'CLIENTE');
+    if (!window.jspdf) {
+      if (window.claude) { aviso('O gerador de PDF não carregou. Verifique a internet e recarregue a página.', true); return; }
+      // arquivo aberto sem internet: usa a janela de impressão
+      var antigo = document.title;
+      document.title = nomeArq;
+      window.print();
+      setTimeout(function () { document.title = antigo; }, 1000);
+      return;
+    }
+    try { entregar(gerarPdf(), nomeArq + '.pdf'); }
+    catch (e) { console.error(e); aviso('Não foi possível gerar o PDF: ' + (e && e.message ? e.message : e), true); }
+  });
+
+  // ---------- avisos e confirmação na própria página (sem janelas do navegador) ----------
+  function aviso(msg, erro) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (erro ? ' erro' : ''); s.hidden = !msg; }
+  var pendente = null, pendenteT = null;
+  function confirmar(chave, msg) {
+    if (pendente === chave) { pendente = null; clearTimeout(pendenteT); aviso(''); return true; }
+    pendente = chave; clearTimeout(pendenteT);
+    pendenteT = setTimeout(function () { pendente = null; aviso(''); }, 8000);
+    aviso(msg); return false;
+  }
+
+  // ---------- entrega do PDF: página publicada, compartilhar do celular ou download ----------
+  function entregar(doc, arquivo) {
+    var blob = doc.output('blob');
+    var baixar = function () { doc.save(arquivo); aviso('PDF gerado: ' + arquivo); };
+    if (window.claude && window.claude.use) { // página publicada no Claude: o download passa pela confirmação do app
+      aviso('Preparando o PDF...');
+      window.claude.use('downloads').then(function (d) {
+        if (!d) { aviso('Esta tela não permite salvar arquivos. Abra o link no navegador do aparelho.', true); return; }
+        return d.save({ filename: arquivo, data: blob }).then(function () { aviso('PDF salvo: ' + arquivo); });
+      }).catch(function (e) {
+        var c = e && e.code;
+        if (c === 'declined') aviso('Download cancelado.');
+        else if (c === 'rate_limited') aviso('Já existe um pedido de download aberto. Aguarde e tente de novo.', true);
+        else aviso('Não foi possível salvar o PDF aqui' + (c ? ' (' + c + ')' : '') + '.', true);
+      });
+      return;
+    }
+    try { // no celular, abre o menu de compartilhar (WhatsApp, salvar em arquivos...)
+      var arq = new File([blob], arquivo, { type: 'application/pdf' });
+      if (window.matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [arq] })) {
+        navigator.share({ files: [arq], title: arquivo }).catch(function (e) { if (e && e.name !== 'AbortError') baixar(); });
+        return;
+      }
+    } catch (e) {}
+    baixar();
+  }
+
+  // ---------- PDF direto (jsPDF), lendo o contrato da pré-visualização ----------
+  function gerarPdf() {
+    var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+    var PW = doc.internal.pageSize.getWidth(), PH = doc.internal.pageSize.getHeight();
+    var M = 70.87, W = PW - 2 * M, y = M, LH = 18, bottom = PH - M;
+    var each = function (list, fn) { Array.prototype.forEach.call(list, fn); };
+    function font(b, size) { doc.setFont('times', b ? 'bold' : 'normal'); doc.setFontSize(size); }
+    function tw(s) { return doc.getStringUnitWidth(s, { doKerning: false }) * doc.getFontSize(); } // sem kerning, igual ao desenho
+    function need(h) { if (y + h > bottom) { doc.addPage(); y = M; } }
+    function runsOf(el, bold) {
+      var out = [];
+      each(el.childNodes, function (n) {
+        if (n.nodeType === 3) out.push({ t: n.nodeValue, b: bold });
+        else if (n.nodeName === 'BR') out.push({ br: true });
+        else out = out.concat(runsOf(n, bold || n.nodeName === 'B'));
+      });
+      return out;
+    }
+    function para(el, o) {
+      var size = o.size || 12, x0 = M + (o.indent || 0), w = W - (o.indent || 0), words = [], cur = null;
+      runsOf(el, !!o.bold).forEach(function (r) {
+        if (r.br) { if (cur) { words.push(cur); cur = null; } words.push({ br: true }); return; }
+        r.t.split(/(\s+)/).forEach(function (s) {
+          if (!s) return;
+          if (/^\s+$/.test(s)) { if (cur) { words.push(cur); cur = null; } return; }
+          font(r.b, size); cur = cur || { p: [], w: 0 };
+          cur.p.push({ t: s, b: r.b }); cur.w += tw(s);
+        });
+      });
+      if (cur) words.push(cur);
+      font(false, size);
+      var sp = tw(' '), lines = [], line = { ws: [], w: 0 };
+      words.forEach(function (wd) {
+        if (wd.br) { line.last = true; lines.push(line); line = { ws: [], w: 0 }; return; }
+        var add = (line.ws.length ? sp : 0) + wd.w;
+        if (line.ws.length && line.w + add > w) { lines.push(line); line = { ws: [], w: 0 }; add = wd.w; }
+        line.ws.push(wd); line.w += add;
+      });
+      line.last = true; lines.push(line);
+      lines.forEach(function (ln, i) {
+        need(LH);
+        var gap = sp, x = x0;
+        if (o.align === 'center') x = x0 + (w - ln.w) / 2;
+        else if (o.align === 'justify' && !ln.last && ln.ws.length > 1) gap = sp + (w - ln.w) / (ln.ws.length - 1);
+        if (o.bullet && i === 0) { font(false, size); doc.text('•', x0 - 14, y + size); }
+        ln.ws.forEach(function (wd) {
+          wd.p.forEach(function (pc) { font(pc.b, size); doc.text(pc.t, x, y + size); x += tw(pc.t); });
+          x += gap;
+        });
+        y += LH;
+      });
+    }
+    function walk(parent) {
+      each(parent.children, function (el) {
+        var c = el.classList;
+        if (el.tagName === 'H2') { para(el, { align: 'center', bold: true, size: 14 }); y += 24; }
+        else if (el.tagName === 'H3') { y += 14; need(LH * 3); para(el, { align: 'center', bold: true }); y += 6; }
+        else if (el.tagName === 'UL') { each(el.children, function (li) { para(li, { align: 'left', indent: 28, bullet: true }); }); y += 8; }
+        else if (c.contains('pay')) { each(el.children, function (p) { para(p, { align: 'left' }); }); y += 6; }
+        else if (c.contains('keep')) { need(270); walk(el); }
+        else if (c.contains('sign')) { y += 60; doc.setLineWidth(0.75); doc.line(M + W * 0.125, y, M + W * 0.875, y); y += 4; para(el, { align: 'center' }); }
+        else if (c.contains('date')) { y += 20; para(el, { align: 'center' }); }
+        else { para(el, { align: 'justify' }); y += 8; }
+      });
+    }
+    walk($('sheet'));
+    return doc;
+  }
+
+  preencher(); render();
+})();
+</script>
+</body>
+</html>
